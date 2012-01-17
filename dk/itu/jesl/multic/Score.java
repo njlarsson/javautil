@@ -31,7 +31,7 @@ public class Score {
       }
       Question[][] corr = CorrectAnswer.parse(openFile(args, i++, "correct answer"));
       BufferedReader ansFile = openFile(args, i++, "given answers");
-      PrintWriter w = new PrintWriter(new OutputStreamWriter(System.out));
+      PrintWriter w = new PrintWriter(new OutputStreamWriter(System.out, "UTF-8"));
       while (true) {
 	 Student stud = Student.parse(ansFile, corr);
 	 if (stud == null) { break; }

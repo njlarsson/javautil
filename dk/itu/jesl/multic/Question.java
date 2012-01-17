@@ -30,7 +30,11 @@ public abstract class Question {
 	 for (int i = 0; i < a; i++) {
 	    if (answer.charAt(i) == '-') {
 	       Err.conf(i == 0 && a == 1);
-	       return 0;
+	       return 0.0;
+	    }
+	    if (answer.charAt(i) == '*') {
+	       Err.conf(i == 0 && a == 1);
+	       return Double.NaN;
 	    }
 	    int j = answer.charAt(i) - '0';
 	    Err.conf(j > max && j <= k, j + "");
@@ -52,6 +56,8 @@ public abstract class Question {
       }
       
       public double score(String answer) {
+	 if ("-".equals(answer)) { return 0.0; }
+	 if ("*".equals(answer)) { return Double.NaN; }
 	 double score = Double.parseDouble(answer);
 	 Err.conf(score >= 0 && score <= maxScore);
 	 return score;

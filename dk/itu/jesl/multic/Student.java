@@ -9,6 +9,7 @@ public class Student {
    private double score = 0.0;
    private ArrayList<String> wrong = new ArrayList<String>();
    private ArrayList<String> incomplete = new ArrayList<String>();
+   private ArrayList<String> pending = new ArrayList<String>();
 
    public static Student parse(BufferedReader r, Question[][] corr) throws IOException {
       Student stud = new Student();
@@ -17,7 +18,7 @@ public class Student {
    }
 
    public void reportScore(PrintWriter w) {
-      w.format("%s: %f\n", name, score);
+      w.format("%s: %f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
    }
 	 
    public void reportDetail(PrintWriter w) {
@@ -35,6 +36,15 @@ public class Student {
 	 w.format(" incomplete");
 	 String delim = ": ";
 	 for (String q : incomplete) {
+	    w.format("%s%s", delim, q);
+	    delim = ", ";
+	 }
+	 w.format(".");
+      }
+      if (pending.size() > 0) {
+	 w.format(" pending");
+	 String delim = ": ";
+	 for (String q : pending) {
 	    w.format("%s%s", delim, q);
 	    delim = ", ";
 	 }
@@ -78,9 +88,12 @@ public class Student {
 	 Err.conf(m.find());
 	 Err.conf(m.start() == lastEnd, m.start() + " " + lastEnd);
 	 double qs = q.score(m.group(1));
-	 if (qs < 0) { wrong.add(q.name); }
-	 else if (qs < q.maxScore) { incomplete.add(q.name); }
-	 score += qs;
+	 if (Double.isNaN(qs)) { pending.add(q.name); }
+	 else {
+	    if (qs < 0) { wrong.add(q.name); }
+	    else if (qs < q.maxScore) { incomplete.add(q.name); }
+	    score += qs;
+	 }
 	 lastEnd = m.end();
       }
    }
