@@ -18,7 +18,7 @@ public class Student {
    }
 
    public void reportScore(PrintWriter w) {
-      w.format("%s: %f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
+      w.format("%s\t%f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
    }
 	 
    public void reportDetail(PrintWriter w) {
@@ -96,5 +96,6 @@ public class Student {
 	 }
 	 lastEnd = m.end();
       }
+      Err.conf(lastEnd == s.length());
    }
 }
