@@ -79,7 +79,7 @@ public class CorrectAnswer {
 		    v.add(Question.multi(pages, problem + "" + (char) ('a' + i), K, c-'0', score));
 		    pos = specMultiM.end();
 		} else if (essayM.region(pos, end).lookingAt()) {
-		    v.add(Question.essay(pages, "" + problem, Double.parseDouble(essayM.group(1))));
+		    v.add(Question.essay(pages, "" + problem + (char) ('a' + i), Double.parseDouble(essayM.group(1))));
 		    pos = essayM.end();
 		} else if (probEndM.region(pos, end).lookingAt()) {
 		    return probEndM.end();
