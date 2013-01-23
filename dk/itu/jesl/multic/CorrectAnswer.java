@@ -47,11 +47,13 @@ public class CorrectAnswer {
 	return v;
     }
 
+    private static String fp = "\\d+(?:\\.\\d+)?";
+
     private static Pattern
 	probNo = Pattern.compile("(\\d+) +"),
 	defaultMulti = Pattern.compile("(\\d)"),
-	specMulti = Pattern.compile("\\[(\\d+(\\.\\d+)?):(\\d)\\]"),
-	essay = Pattern.compile("\\((\\d+(\\.\\d+)?)\\)"),
+	specMulti = Pattern.compile("\\[(" + fp + "):(\\d)\\]"),
+	essay = Pattern.compile("\\((" + fp + ")(?:\\*(" + fp + "))?\\)"),
 	probEnd = Pattern.compile("; *");
 
     private ArrayList<Question> parsePage(String s, Question pred) {
@@ -83,12 +85,14 @@ public class CorrectAnswer {
 		    pos = defaultMultiM.end();
 		} else if (specMultiM.region(pos, end).lookingAt()) {
 		    double score = Double.parseDouble(specMultiM.group(1));
-		    char c = s.charAt(specMultiM.start(3));
+		    char c = s.charAt(specMultiM.start(2));
 		    Err.conf(c >= '1' && c <= '0' + K, c + " out of range");
 		    v.add(Question.multi(pred, pages, problem, K, c-'0', score));
 		    pos = specMultiM.end();
 		} else if (essayM.region(pos, end).lookingAt()) {
-		    v.add(Question.essay(pred, pages, problem, Double.parseDouble(essayM.group(1))));
+                    String rescaleString = essayM.group(2);
+                    double rescale = rescaleString == null ? 1.0 : Double.parseDouble(rescaleString);
+		    v.add(Question.essay(pred, pages, problem, Double.parseDouble(essayM.group(1)), rescale));
 		    pos = essayM.end();
 		} else if (probEndM.region(pos, end).lookingAt()) {
 		    return probEndM.end();

@@ -93,7 +93,7 @@ public class Student {
 		else {
 		    if (qs < 0) { wrong.add(q.name()); }
 		    else if (qs < q.maxScore) { incomplete.add(q.name()); }
-		    score += qs;
+		    score += qs * q.rescaleFactor();
 		}
 		lastEnd = m.end();
 	    } catch (Err.FormatException fe) {

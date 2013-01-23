@@ -28,6 +28,8 @@ public abstract class Question {
 
     public abstract double score(String answer);
 
+    public abstract double rescaleFactor();
+
     private static double log2(double x) { return Math.log(x) / Math.log(2); }
 
     private static class MultiQuestion extends Question {
@@ -67,13 +69,18 @@ public abstract class Question {
 		return -(double) a / (k - a) * log2((double) k / a) * scaleFactor;
 	    }
 	}
+        
+        public double rescaleFactor() { return 1.0; }
     }
       
     Pattern essayScorePattern = Pattern.compile("\\d*\\.\\d+");
 
     private static class EssayQuestion extends Question {
-	EssayQuestion(Question pred, int page, int problem, double maxScore) {
+        private final double rescale;
+
+	EssayQuestion(Question pred, int page, int problem, double maxScore, double rescale) {
 	    super(pred, page, problem, maxScore);
+            this.rescale = rescale;
 	}
       
 	public double score(String answer) {
@@ -84,13 +91,15 @@ public abstract class Question {
 	    Err.conf(score >= 0 && score <= maxScore, "Score out of range: " + score);
 	    return score;
 	}
+
+        public double rescaleFactor() { return rescale; }
     }
 
     public static Question multi(Question pred, int page, int problem, int k, int correct, double maxScore) {
 	return new MultiQuestion(pred, page, problem, k, correct, maxScore);
     }
 
-    public static Question essay(Question pred, int page, int problem, double maxScore) {
-	return new EssayQuestion(pred, page, problem, maxScore);
+    public static Question essay(Question pred, int page, int problem, double maxScore, double rescale) {
+	return new EssayQuestion(pred, page, problem, maxScore, rescale);
     }
 }
