@@ -89,17 +89,17 @@ public class Student {
 		Err.conf(m.find());
 		Err.conf(m.start() == lastEnd, m.start() + " " + lastEnd);
 		double qs = q.score(m.group(1));
-		if (Double.isNaN(qs)) { pending.add(q.name); }
+		if (Double.isNaN(qs)) { pending.add(q.name()); }
 		else {
-		    if (qs < 0) { wrong.add(q.name); }
-		    else if (qs < q.maxScore) { incomplete.add(q.name); }
+		    if (qs < 0) { wrong.add(q.name()); }
+		    else if (qs < q.maxScore) { incomplete.add(q.name()); }
 		    score += qs;
 		}
 		lastEnd = m.end();
 	    } catch (Err.FormatException fe) {
-		throw fe.setProblem(q.name);
+		throw fe.setProblem(q.name());
 	    } catch (NumberFormatException nfe) {
-		throw new Err.FormatException(nfe).setProblem(q.name);
+		throw new Err.FormatException(nfe).setProblem(q.name());
 	    }
 	}
 	Err.conf(lastEnd >= s.length(), "Too many answers?");

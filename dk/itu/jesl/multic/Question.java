@@ -4,10 +4,27 @@ import java.util.regex.*;
 
 public abstract class Question {
     public final int page;
-    public final String name;
     public final double maxScore;
+    private int problem, subProblem;
    
-    private Question(int page, String name, double maxScore) { this.page = page; this.name = name; this.maxScore = maxScore; }
+    private Question(Question pred, int page, int problem, double maxScore) {
+        this.page = page; 
+        this.problem = problem;
+        this.maxScore = maxScore;
+        if (pred != null && pred.problem == problem) {
+            if (pred.subProblem == 0) pred.subProblem++;
+            this.subProblem = pred.subProblem + 1;
+        }
+    }
+
+    public String name() {
+        StringBuilder b = new StringBuilder();
+        b.append(Integer.toString(problem));
+        if (subProblem > 0) {
+            b.append((char) ('a'-1 + subProblem));
+        }
+        return b.toString();
+    }
 
     public abstract double score(String answer);
 
@@ -17,8 +34,8 @@ public abstract class Question {
 	final int k, correct;
 	final double scaleFactor;
       
-	MultiQuestion(int page, String name, int k, int correct, double maxScore) {
-	    super(page, name, maxScore);
+	MultiQuestion(Question pred, int page, int problem, int k, int correct, double maxScore) {
+	    super(pred, page, problem, maxScore);
 	    Err.conf(k > 1 && correct >= 1 && correct <= 4);
 	    this.k = k;
 	    this.correct = correct;
@@ -55,8 +72,8 @@ public abstract class Question {
     Pattern essayScorePattern = Pattern.compile("\\d*\\.\\d+");
 
     private static class EssayQuestion extends Question {
-	EssayQuestion(int page, String name, double maxScore) {
-	    super(page, name, maxScore);
+	EssayQuestion(Question pred, int page, int problem, double maxScore) {
+	    super(pred, page, problem, maxScore);
 	}
       
 	public double score(String answer) {
@@ -69,11 +86,11 @@ public abstract class Question {
 	}
     }
 
-    public static Question multi(int page, String name, int k, int correct, double maxScore) {
-	return new MultiQuestion(page, name, k, correct, maxScore);
+    public static Question multi(Question pred, int page, int problem, int k, int correct, double maxScore) {
+	return new MultiQuestion(pred, page, problem, k, correct, maxScore);
     }
 
-    public static Question essay(int page, String name, double maxScore) {
-	return new EssayQuestion(page, name, maxScore);
+    public static Question essay(Question pred, int page, int problem, double maxScore) {
+	return new EssayQuestion(pred, page, problem, maxScore);
     }
 }
