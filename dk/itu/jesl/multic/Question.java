@@ -35,13 +35,15 @@ public abstract class Question {
     private static class MultiQuestion extends Question {
 	final int k, correct;
 	final double scaleFactor;
+        final int multLetterBase;
       
-	MultiQuestion(Question pred, int page, int problem, int k, int correct, double maxScore) {
+	MultiQuestion(Question pred, int page, int problem, int k, int correct, double maxScore, int multLetterBase) {
 	    super(pred, page, problem, maxScore);
 	    Err.conf(k > 1 && correct >= 1 && correct <= 4);
 	    this.k = k;
 	    this.correct = correct;
 	    scaleFactor = maxScore / log2(k);
+            this.multLetterBase = multLetterBase;
 	}
 
 	public double score(String answer) {
@@ -57,7 +59,7 @@ public abstract class Question {
 		    Err.conf(i == 0 && a == 1);
 		    return Double.NaN;
 		}
-		int j = answer.charAt(i) - '0';
+		int j = answer.charAt(i) - multLetterBase;
 		Err.conf(j > max && j <= k, j + "");
 		c |= j == correct;
 		max = j;
@@ -95,8 +97,8 @@ public abstract class Question {
         public double rescaleFactor() { return rescale; }
     }
 
-    public static Question multi(Question pred, int page, int problem, int k, int correct, double maxScore) {
-	return new MultiQuestion(pred, page, problem, k, correct, maxScore);
+    public static Question multi(Question pred, int page, int problem, int k, int correct, double maxScore, int multLetterBase) {
+	return new MultiQuestion(pred, page, problem, k, correct, maxScore, multLetterBase);
     }
 
     public static Question essay(Question pred, int page, int problem, double maxScore, double rescale) {

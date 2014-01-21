@@ -10,8 +10,8 @@ public class CorrectAnswer {
 
     private int pages = 0;
 
-    public static Question[][] parse(BufferedReader r) throws IOException {
-	return new CorrectAnswer().parseNonstatic(r);
+    public static Question[][] parse(BufferedReader r, int multLetterBase) throws IOException {
+	return new CorrectAnswer(multLetterBase).parseNonstatic(r);
     }
 
     private Question[][] parseNonstatic(BufferedReader r) throws IOException {
@@ -49,12 +49,8 @@ public class CorrectAnswer {
 
     private static String fp = "\\d+(?:\\.\\d+)?";
 
-    private static Pattern
-	probNo = Pattern.compile("(\\d+) +"),
-	defaultMulti = Pattern.compile("(\\d)"),
-	specMulti = Pattern.compile("\\[(" + fp + "):(\\d)\\]"),
-	essay = Pattern.compile("\\((" + fp + ")(?:\\*(" + fp + "))?\\)"),
-	probEnd = Pattern.compile("; *");
+    private final int multLetterBase;
+    private final Pattern probNo, defaultMulti, specMulti, essay, probEnd;
 
     private ArrayList<Question> parsePage(String s, Question pred) {
 	ArrayList<Question> v = new ArrayList<Question>();
@@ -64,6 +60,26 @@ public class CorrectAnswer {
             pred = v.get(v.size()-1);
 	} while (pos < s.length());
 	return v;
+    }
+
+    public CorrectAnswer(int multLetterBase) {
+        this.multLetterBase = multLetterBase;
+	probNo = Pattern.compile("(\\d+) +");
+	essay = Pattern.compile("\\((" + fp + ")(?:\\*(" + fp + "))?\\)");
+	probEnd = Pattern.compile("; *");
+        
+        if (multLetterBase == '0') {
+            defaultMulti = Pattern.compile("(\\d)");
+            specMulti = Pattern.compile("\\[(" + fp + "):(\\d)\\]");
+        } else if (multLetterBase == 'A'-1) {
+            defaultMulti = Pattern.compile("([A-Z])");
+            specMulti = Pattern.compile("\\[(" + fp + "):([A-Z])\\]");
+        } else if (multLetterBase == 'a'-1) {
+            defaultMulti = Pattern.compile("([a-z])");
+            specMulti = Pattern.compile("\\[(" + fp + "):([a-z])\\]");
+        } else {
+            throw new IllegalStateException("No pattern for multLetterBase=" + multLetterBase);
+        }
     }
 
     private int parseProblem(String s, int pos, ArrayList<Question> v, Question pred) {
@@ -79,15 +95,15 @@ public class CorrectAnswer {
 	    Matcher probEndM = probEnd.matcher(s);
 	    for (int i = 0; pos < end; i++) {
 		if (defaultMultiM.region(pos, end).lookingAt()) {
-		    int j = s.charAt(defaultMultiM.start(1)) - '0';
+		    int j = s.charAt(defaultMultiM.start(1)) - multLetterBase;
 		    Err.conf(j >= 1 && j <= K);
-		    v.add(Question.multi(pred, pages, problem, K, j, DEFAULT_MULTI_SCORE));
+		    v.add(Question.multi(pred, pages, problem, K, j, DEFAULT_MULTI_SCORE, multLetterBase));
 		    pos = defaultMultiM.end();
 		} else if (specMultiM.region(pos, end).lookingAt()) {
 		    double score = Double.parseDouble(specMultiM.group(1));
 		    char c = s.charAt(specMultiM.start(2));
-		    Err.conf(c >= '1' && c <= '0' + K, c + " out of range");
-		    v.add(Question.multi(pred, pages, problem, K, c-'0', score));
+		    Err.conf(c > multLetterBase && c <= multLetterBase + K, c + " out of range");
+		    v.add(Question.multi(pred, pages, problem, K, c-multLetterBase, score, multLetterBase));
 		    pos = specMultiM.end();
 		} else if (essayM.region(pos, end).lookingAt()) {
                     String rescaleString = essayM.group(2);
