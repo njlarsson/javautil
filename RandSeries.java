@@ -6,11 +6,12 @@ import java.util.Random;
 public class RandSeries {
     public static void main(String[] args) {
         int n = Integer.parseInt(args[0]);
-        int m = Integer.parseInt(args[1]);
+        int lo = Integer.parseInt(args[1]);
+        int hi = Integer.parseInt(args[2]);
         
         Random random = new Random();
         
-        for (int i = 1; i < n; i++) System.out.print((random.nextInt() & Integer.MAX_VALUE) % m + 1 + " ");
+        for (int i = 0; i < n; i++) System.out.print(lo + (random.nextInt() & Integer.MAX_VALUE) % (hi-lo+1) + " ");
         System.out.println();
     }
 }
