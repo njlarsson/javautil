@@ -36,7 +36,8 @@ public class CuckooHashMapTest {
     public void testParameterCalc1() {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 100, 0.1);
         assertThat("r", m.r(), is(128));
-        assertThat("cap", m.cap(), is(116));
+        assertThat("maxN", m.maxN(), is(116));
+        assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(128));
     }
 
@@ -44,7 +45,8 @@ public class CuckooHashMapTest {
     public void testParameterCalc2() {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 1000000, 0.1);
         assertThat("r", m.r(), is(2097152));
-        assertThat("cap", m.cap(), is(1906501));
+        assertThat("maxN", m.maxN(), is(1906501));
+        assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(459));
     }
 
@@ -52,7 +54,8 @@ public class CuckooHashMapTest {
     public void testParameterCalc3() {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 1000000, 0.5);
         assertThat("r", m.r(), is(2097152));
-        assertThat("cap", m.cap(), is(1398101));
+        assertThat("maxN", m.maxN(), is(1398101));
+        assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(108));
     }
 

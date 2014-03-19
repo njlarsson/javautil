@@ -1,0 +1,33 @@
+    private final static Hasher<Long> oddLongHasher =
+        new Hasher<Long>() {
+            public int hashCode(Long k) {
+                long i = k;
+                // 76543210 ->
+                //     7531
+                return (int) (i>>>1*8) & 0xff |
+                       (int) (i>>>2*8) & 0xff00 |
+                       (int) (i>>>3*8) & 0xff0000 | 
+                       (int) (i>>>4*8) & 0xff000000;
+            }
+        };
+
+    private final static Hasher<Long> evenLongHasher =
+        new Hasher<Long>() {
+            public int hashCode(Long k) {
+                long i = k;
+                // 76543210 ->
+                //     6420
+                return (int) i         & 0xff |
+                       (int) (i>>>1*8) & 0xff00 |
+                       (int) (i>>>2*8) & 0xff0000 | 
+                       (int) (i>>>3*8) & 0xff000000;
+            }
+        };
+
+    // This factory delivers the same pair of hashers every time,
+    // meaning that it doesn't work in general.
+    private final static Hasher.Factory<Long> oddEvenHasherFactory =
+        new Hasher.Factory<Long>() {
+            private boolean odd = false;
+            public Hasher<Long> makeHasher() { return (odd = !odd) ? oddLongHasher : evenLongHasher; }
+        };
