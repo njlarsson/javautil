@@ -1,6 +1,7 @@
 package dk.itu.jesl.hash;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Cuckoo hashing implemented in a conventional way, using two arrays of
@@ -8,6 +9,14 @@ import java.util.Map;
  * that an appropriate Hasher is provided.
  */
 public class CuckooHashMap<K, V> {
+    /** 
+     * Number of times to try rehashing before deciding that the factory isn't
+     * going to produce a working pair, giving up, and throwing an exception.
+     *
+     * @see RehashFailedException
+     */
+    public static int REHASH_TRIES = 100;
+
     private final static class Entry<K, V> {
         final K key;
         V value;
@@ -20,14 +29,25 @@ public class CuckooHashMap<K, V> {
     private int r, n, cap, maxLoop;
     private Entry<K, V>[] a;
 
+    private final static Logger logger = Logger.getLogger(CuckooHashMap.class.getName()); 
+
     public CuckooHashMap(Hasher.Factory<K> hfact, int initialCapacity, double epsilon) {
+        logger.fine("Creating, cap=" + initialCapacity + ", eps =" + epsilon);
         this.hfact = hfact;
         this.epsilon = epsilon;
-        r = 1 << (int) Math.ceil((Math.log(initialCapacity * (1.0 + epsilon)) * 0.69314718055994531));
+        r = 1 << (int) Math.ceil((Math.log(initialCapacity * (1 + epsilon)) * 1.4426950408889634));
         recalc();
         a = alloc(2*r);
         h1 = hfact.makeHasher();
         h2 = hfact.makeHasher();
+    }
+
+    public CuckooHashMap(Hasher.Factory<K> hfact, int initialCapacity) {
+        this(hfact, initialCapacity, 0.1);
+    }
+
+    public CuckooHashMap(Hasher.Factory<K> hfact) {
+        this(hfact, 58 /* makes r=64 */, 0.1);
     }
 
     private Entry<K, V>[] alloc(int size) {
@@ -37,39 +57,62 @@ public class CuckooHashMap<K, V> {
     }
 
     private void recalc() {
-        cap = (int) Math.floor(r * (1 - epsilon));
+        cap = (int) Math.floor(r / (1 + epsilon));
         maxLoop = Math.min(r, (int) Math.ceil(3*Math.log(r)/Math.log(1.0 + epsilon)));
+        logger.fine("r=" + r + ", cap=" + cap + ", maxLoop=" + maxLoop);
     }
 
-    private Entry<K, V> lookup(K key) {
+    // Finds index if present, otherwise -1. Package local for testing purposes.
+    int locate(K key) {
         int i = h1.hashCode(key) & r-1;
         Entry<K, V> e1 = a[i];
-        if (e1 != null && (key == e1.key || key.equals(e1.key))) return e1;
-        int j = h2.hashCode(key) & r-1;
-        Entry<K, V> e2 = a[r+j];
-        if (e2 != null && (key == e2.key || (key.equals(e2.key)))) return e2;
-        return null;
+        if (e1 != null && (key == e1.key || key.equals(e1.key))) return i;
+        int j = r + (h2.hashCode(key) & r-1);
+        Entry<K, V> e2 = a[j];
+        if (e2 != null && (key == e2.key || (key.equals(e2.key)))) return j;
+        return -1;
     }
-    
-    private void rehash() {
-        Entry<K, V>[] a0 = a;
-        while (true) {          // loop until successful rehash
-            Entry<K, V>[] b = a0;
-            a = alloc(r);
-            int i;
-            for (i = 0; i < b.length; i++) {
-                Entry<K, V> e = b[i];
-                if (e != null) {
-                    i = h1.hashCode(e.key) & r-1;
-                    Entry<K, V> e1 = a[i];
-                    a[i] = e;
-                    if (e1 != null && renest(e1, i) != null) break;
-                }
+
+    public V get(K key) {
+        int i = locate(key);
+        if (i >= 0) return a[i].value;
+        else        return null;
+    }
+
+    public V remove(K key) {
+        int i = locate(key);
+        if (i >= 0) { V value = a[i].value; a[i] = null; return value; }
+        else        return null;
+    }
+
+    // Creates new array, reinserts all entries. Returns true iff successful.
+    private boolean rehash() {
+        Entry<K, V>[] b = a;
+        a = alloc(r);
+        for (int i = 0, m = n; m > 0; i++) {
+            Entry<K, V> e = b[i];
+            if (e != null) {
+                i = h1.hashCode(e.key) & r-1;
+                Entry<K, V> e1 = a[i];
+                a[i] = e;
+                if (e1 != null && renest(e1, i) != null) { a = b; return false; }
+                m--;
             }
-            if (i == r) break;  // if all went well, done
+        }
+        return true;
+    }
+
+    // Rehashes with new hash functions.
+    private void reseed() {
+        for (int k = 0; k < REHASH_TRIES; k++) {
             h1 = hfact.makeHasher();
             h2 = hfact.makeHasher();
+            if (rehash()) {
+                logger.fine("Successfully rehashed after " + k + " retries");
+                return;
+            }
         }
+        throw new RehashFailedException();
     }
 
     public V put(K key, V value) {
@@ -121,4 +164,9 @@ public class CuckooHashMap<K, V> {
         while ((1 << y) < x) y++;
         return y;
     }
+
+    // Package local accessors for testing
+    int cap() { return cap; }
+    int maxLoop() { return maxLoop; }
+    int r() { return r; }
 }

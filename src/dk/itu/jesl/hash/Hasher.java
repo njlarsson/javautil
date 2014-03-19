@@ -1,9 +1,9 @@
 package dk.itu.jesl.hash;
 
-public interface Hasher<T> {
-    interface Factory<T> {
-	Hasher<T> makeHasher();
+public interface Hasher<K> {
+    interface Factory<K> {
+	Hasher<K> makeHasher();
     }
 
-    int hashCode(T t);
+    int hashCode(K key);
 }
