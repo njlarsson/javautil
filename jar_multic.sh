@@ -1,2 +1,2 @@
 rm -f multic.jar
-jar cf multic.jar dk/itu/jesl/multic/*java dk/itu/jesl/multic/*class
+jar cf multic.jar src/dk/itu/jesl/multic/*java src/dk/itu/jesl/multic/*class
