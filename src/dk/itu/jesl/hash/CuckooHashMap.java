@@ -120,7 +120,7 @@ public class CuckooHashMap<K, V> {
             if (rehash()) {
                 // Ok, just the last one, if there is one.
                 if (e == null) return;
-                e = attemptInsert(e, h1.hashCode(e.key));
+                e = attemptInsert(e, h1.hashCode(e.key) & r-1);
                 if (e == null) return;
             }
         }
@@ -130,44 +130,30 @@ public class CuckooHashMap<K, V> {
     public V put(K key, V value) {
         int i = h1.hashCode(key) & r-1;
         Entry<K, V> e1 = a[i];
-        if (e1 == null) { put(key, value, i); return null; }
-        if (key == e1.key || key.equals(e1.key)) { V old = e1.value; e1.value = value; return old; }
-
+        if (e1 != null && key.equals(e1.key)) { V old = e1.value; e1.value = value; return old; }
+        
         int j = r + (h2.hashCode(key) & r-1);
         Entry<K, V> e2 = a[j];
-        if (e2 == null) { put(key, value, j); return null; }
-        if (key == e2.key || key.equals(e2.key)) { V old = e2.value; e2.value = value; return old; }
+        if (e2 != null && key.equals(e2.key)) { V old = e2.value; e2.value = value; return old; }
 
-        if (n == maxN) {
-            expand();
-            i = h1.hashCode(key);
-        }
+        if (n == maxN) { expand(); i = h1.hashCode(key) & r-1; }
+
         Entry<K, V> e = attemptInsert(new Entry<K, V>(key, value), i);
         if (e != null) reseed(e);
         n++;
         return null;
     }
 
-    private void put(K key, V value, int i) {
-        if (n < maxN) a[i] = new Entry<K, V>(key, value);
-        else {
-            expand();
-            Entry<K, V> e = attemptInsert(new Entry<K, V>(key, value), h1.hashCode(key));
-            if (e != null) reseed(e);
-        } 
-        n++;
-    }
-
     private Entry<K, V> attemptInsert(Entry<K, V> e, int i) {
         for (int k = 0; k < maxLoop; k++) {
             Entry<K, V> f = a[i];
             a[i] = e;
-            if (f == null) { return null; }
+            if (f == null) return null;
 
             int j = r + (h2.hashCode(f.key) & r-1);
             e = a[j];
             a[j] = f;
-            if (e == null) { return null; }
+            if (e == null) return null;
 
             i = h1.hashCode(e.key) & r-1;
         }

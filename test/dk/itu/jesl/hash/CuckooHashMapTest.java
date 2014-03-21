@@ -59,7 +59,8 @@ public class CuckooHashMapTest {
             new DebugKey(new int[] { 3, 4 }, "a"),
             new DebugKey(new int[] { 3, 5 }, "b")
         };
-        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(new DebugHasherFactory());
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact);
         for (DebugKey key : keys) {
             m.put(key, key.name);
         }
@@ -69,10 +70,72 @@ public class CuckooHashMapTest {
             assertThat(m.get(new DebugKey(key.v, "x")), is(key.name));
         }
         assertThat(m.get(new DebugKey(new int[] { 3, 6 }, "y")), nullValue());
-        assertThat(m.location(keys[0]), is(3 % m.r()));
-        assertThat(m.location(keys[1]), is(m.r() + 5 % m.r()));
+        assertThat(m.location(keys[0]), is(m.r() + 4 % m.r()));
+        assertThat(m.location(keys[1]), is(3 % m.r()));
+        assertThat(hfact.i, is(2));
     }
 
+    @Test
+    public void testRemovePut() {
+        DebugKey[] keys = {
+            new DebugKey(new int[] { 0, 0 }, "a"),
+            new DebugKey(new int[] { 0, 1 }, "b")
+        };
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact);
+        m.put(keys[0], keys[0].name);
+        m.put(keys[1], keys[1].name);
+        String v = m.remove(keys[1]);
+        assertThat(m.size(), is(1));
+        assertThat(v, is("b"));
+        v = m.put(keys[0], keys[0].name);
+        assertThat(m.size(), is(1));
+        assertThat(v, is("a"));
+        assertThat(m.location(keys[0]), is(m.r()));
+        v = m.put(keys[1], keys[1].name);
+        assertThat(m.size(), is(2));
+        assertThat(v, nullValue());
+        assertThat(m.location(keys[0]), is(m.r()));
+        assertThat(m.location(keys[1]), is(0));
+        v = m.put(keys[0], keys[0].name);
+        assertThat(m.size(), is(2));
+        assertThat(v, is("a"));
+        assertThat(m.location(keys[0]), is(m.r()));
+        assertThat(m.location(keys[1]), is(0));
+        v = m.remove(keys[0]);
+        assertThat(m.size(), is(1));
+        assertThat(v, is("a"));
+        assertThat(m.location(keys[0]), is(-1));
+        assertThat(m.location(keys[1]), is(0));
+        v = m.remove(keys[0]);
+        assertThat(m.size(), is(1));
+        assertThat(v, nullValue());
+        assertThat(m.location(keys[0]), is(-1));
+        assertThat(m.location(keys[1]), is(0));
+        v = m.put(keys[0], keys[0].name);
+        assertThat(m.size(), is(2));
+        assertThat(v, nullValue());
+        assertThat(m.location(keys[0]), is(0));
+        assertThat(m.location(keys[1]), is(m.r()+1));
+        v = m.remove(keys[0]);
+        assertThat(m.size(), is(1));
+        assertThat(v, is("a"));
+        v = m.remove(keys[1]);
+        assertThat(m.size(), is(0));
+        assertThat(v, is("b"));
+        v = m.remove(keys[1]);
+        assertThat(m.size(), is(0));
+        assertThat(v, nullValue());
+        v = m.put(keys[1], keys[1].name);
+        assertThat(m.size(), is(1));
+        assertThat(v, nullValue());
+        v = m.put(keys[0], keys[0].name);
+        assertThat(m.size(), is(2));
+        assertThat(v, nullValue());
+        assertThat(m.location(keys[0]), is(0));
+        assertThat(m.location(keys[1]), is(m.r() + 1));
+        assertThat(hfact.i, is(2));
+    }
 
     @Test
     public void testFillTwoSlots() {
@@ -86,8 +149,17 @@ public class CuckooHashMapTest {
         // 0: a d
         // 1: e b
         // 2: - c
-        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(new DebugHasherFactory());
-        for (DebugKey key : keys) {
+
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact);
+        for (int i = 0; i < 2; i++) {
+            DebugKey key = keys[i];
+            m.put(key, key.name);
+        }
+        assertThat(m.location(keys[0]), is(m.r()));
+        assertThat(m.location(keys[1]), is(0));
+        for (int i = 2; i < keys.length; i++) {
+            DebugKey key = keys[i];
             m.put(key, key.name);
         }
         assertThat(m.size(), is(keys.length));
@@ -96,10 +168,11 @@ public class CuckooHashMapTest {
         assertThat(m.location(keys[2]), is(m.r()+2));
         assertThat(m.location(keys[3]), is(m.r()+0));
         assertThat(m.location(keys[4]), is(1));
+        assertThat(hfact.i, is(2));
     }
 
     @Test(expected = RehashFailedException.class)
-    public void testFailedRehash() {
+    public void testFailedReseed() {
         DebugKey[] keys = {
             new DebugKey(new int[] { 0, 0 }, "a"),
             new DebugKey(new int[] { 0, 1 }, "b"),
@@ -126,10 +199,74 @@ public class CuckooHashMapTest {
             new DebugKey(new int[] { 1, 2, 1, 3 }, "f")
         };
         DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 100);
+        for (DebugKey key : keys) {
+            m.put(key, key.name);
+        }
+        assertThat(m.size(), is(keys.length));
+        assertThat(hfact.i, is(4));
+    }
+
+    @Test
+    public void moreReseed() {
+        DebugKey[] keys = {
+            new DebugKey(new int[] { 0, 0, 10, 10 }, "a"),
+            new DebugKey(new int[] { 0, 1, 10, 11 }, "b"),
+            new DebugKey(new int[] { 0, 2, 10, 12 }, "c"),
+            new DebugKey(new int[] { 1, 0, 11, 10 }, "d"),
+            new DebugKey(new int[] { 1, 1, 11, 11 }, "e"),
+            new DebugKey(new int[] { 1, 2, 11, 12, 1, 3 }, "f")
+        };
+        DebugHasherFactory hfact = new DebugHasherFactory();
             CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 100);
         for (DebugKey key : keys) {
             m.put(key, key.name);
         }
         assertThat(m.size(), is(keys.length));
+        assertThat(hfact.i, is(6));
+        for (DebugKey key : keys) {
+            m.put(key, key.name);
+        }
+        assertThat(m.size(), is(keys.length));
+        assertThat(hfact.i, is(6));
+        for (DebugKey key : keys) {
+            m.remove(key);
+        }
+        assertThat(m.size(), is(0));
+        for (DebugKey key : keys) {
+            m.put(key, key.name);
+        }
+        assertThat(m.size(), is(keys.length));
+        assertThat(hfact.i, is(6));
+    }
+
+    @Test
+    public void testExpandAndReseed() {
+        DebugKey[] keys = {
+            new DebugKey(new int[] { 0, 0, 10, 10 }, "a"),
+            new DebugKey(new int[] { 0, 1, 10, 11 }, "b"),
+            new DebugKey(new int[] { 0, 2, 10, 12 }, "c"),
+            new DebugKey(new int[] { 1, 0, 11, 10 }, "d"),
+            new DebugKey(new int[] { 1, 1, 11, 11 }, "e"),
+            new DebugKey(new int[] { 1, 2, 11, 12, 1, 3 }, "f")
+        };
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(hfact, 1, 0.1);
+        assertThat(m.r(), is(2));
+        m.put(keys[0], keys[0].name);
+        assertThat(m.r(), is(2));
+        m.put(keys[0], keys[0].name);
+        assertThat(m.r(), is(2));
+        m.put(keys[1], keys[1].name);
+        assertThat(m.r(), is(4));
+        m.put(keys[2], keys[2].name);
+        assertThat(m.r(), is(4));
+        m.put(keys[3], keys[3].name);
+        assertThat(m.r(), is(8));
+        m.put(keys[4], keys[4].name);
+        assertThat(m.r(), is(8));
+        m.put(keys[5], keys[5].name);
+        assertThat(m.r(), is(8));
+        assertThat(hfact.i, is(6));
     }
 }
