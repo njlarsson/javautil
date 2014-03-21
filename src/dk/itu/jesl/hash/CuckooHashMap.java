@@ -94,7 +94,7 @@ public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
         if (e1 != null && (key == e1.key || key.equals(e1.key))) return i;
         int j = r + (h2.hashCode(key) & r-1);
         Entry<K, V> e2 = a[j];
-        if (e2 != null && (key == e2.key || (key.equals(e2.key)))) return j;
+        if (e2 != null && (key == e2.key || key.equals(e2.key))) return j;
         return -1;
     }
 
