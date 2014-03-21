@@ -1,6 +1,6 @@
 package dk.itu.jesl.hash;
 
-import java.util.Arrays;
+import java.util.*;
 import org.junit.*;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -31,7 +31,7 @@ public class CuckooHashMapTest {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(new DebugHasherFactory(), 100, 0.1);
         assertThat("r", m.r(), is(128));
         assertThat("maxN", m.maxN(), is(116));
-        assertThat("minN", m.minN(), is(0));
+        // assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(128));
     }
 
@@ -40,7 +40,7 @@ public class CuckooHashMapTest {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(new DebugHasherFactory(), 1000000, 0.1);
         assertThat("r", m.r(), is(2097152));
         assertThat("maxN", m.maxN(), is(1906501));
-        assertThat("minN", m.minN(), is(0));
+        // assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(459));
     }
 
@@ -49,7 +49,7 @@ public class CuckooHashMapTest {
         CuckooHashMap<DebugKey, String> m = new CuckooHashMap<DebugKey, String>(new DebugHasherFactory(), 1000000, 0.5);
         assertThat("r", m.r(), is(2097152));
         assertThat("maxN", m.maxN(), is(1398101));
-        assertThat("minN", m.minN(), is(0));
+        // assertThat("minN", m.minN(), is(0));
         assertThat("maxLoop", m.maxLoop(), is(108));
     }
 
@@ -171,6 +171,71 @@ public class CuckooHashMapTest {
         assertThat(hfact.i, is(2));
     }
 
+    @Test
+    public void testIterator() {
+        DebugKey[] keys = {
+            new DebugKey(new int[] { 0, 0 }, "a"),
+            new DebugKey(new int[] { 0, 1 }, "b"),
+            new DebugKey(new int[] { 0, 2 }, "c"),
+            new DebugKey(new int[] { 1, 0 }, "d"),
+            new DebugKey(new int[] { 1, 1 }, "e") 
+        };
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, Integer> m = new CuckooHashMap<DebugKey, Integer>(hfact);
+        for (int i = 0; i < keys.length; i++) {
+            DebugKey key = keys[i];
+            m.put(key, i);
+        }
+        boolean[] present = new boolean[keys.length];
+        for (int i : m.values()) {
+            assertThat(present[i], is(false));
+            present[i] = true;
+        }
+        for (boolean b : present) {
+            assertThat(b, is(true));
+        }
+    }
+
+    @Test
+    public void testIteratorRemove() {
+        DebugKey[] keys = {
+            new DebugKey(new int[] { 0, 0 }, "a"),
+            new DebugKey(new int[] { 0, 1 }, "b"),
+            new DebugKey(new int[] { 0, 2 }, "c"),
+            new DebugKey(new int[] { 1, 0 }, "d"),
+            new DebugKey(new int[] { 1, 1 }, "e") 
+        };
+        DebugHasherFactory hfact = new DebugHasherFactory();
+        CuckooHashMap<DebugKey, Integer> m = new CuckooHashMap<DebugKey, Integer>(hfact);
+        for (int i = 0; i < keys.length; i++) {
+            DebugKey key = keys[i];
+            m.put(key, i);
+        }
+        boolean[] check = new boolean[keys.length];
+        boolean[] present = new boolean[keys.length];
+        Iterator<Integer> it = m.values().iterator();
+        for (int k = 0; it.hasNext(); k++) {
+            int i = it.next();
+            assertThat(present[i], is(false));
+            present[i] = true;
+            if ((k & 1) == 0) {
+                it.remove();
+                check[i] = true;
+            }
+        }
+        assertThat(m.size(), is(2));
+        for (int i : m.values()) {
+            assertThat(check[i], is(false));
+            check[i] = true;
+        }
+        for (boolean b : present) {
+            assertThat(b, is(true));
+        }
+        for (boolean b : check) {
+            assertThat(b, is(true));
+        }
+    }
+
     @Test(expected = RehashFailedException.class)
     public void testFailedReseed() {
         DebugKey[] keys = {
@@ -268,11 +333,13 @@ public class CuckooHashMapTest {
         m.put(keys[5], keys[5].name);
         assertThat(m.r(), is(8));
         assertThat(hfact.i, is(6));
-        for (int i = 0; i < 4; i++) {
-            m.remove(keys[i]);
-        }
-        assertThat(m.r(), is(8));
-        m.remove(keys[4]);
-        assertThat(m.r(), is(4));
+
+        // The following would be applicable if we did shrink.
+        // for (int i = 0; i < 4; i++) {
+        //     m.remove(keys[i]);
+        // }
+        // assertThat(m.r(), is(8));
+        // m.remove(keys[4]);
+        // assertThat(m.r(), is(4));
     }
 }

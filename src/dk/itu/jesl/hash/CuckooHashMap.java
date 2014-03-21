@@ -1,14 +1,13 @@
 package dk.itu.jesl.hash;
 
-import java.util.Map;
-import java.util.logging.Logger;
+import java.util.*;
 
 /**
  * Cuckoo hashing implemented in a conventional way, using two arrays of
  * Map.Entry objects. Capable of handling any kind of objects as keys, provided
  * that an appropriate Hasher is provided.
  */
-public class CuckooHashMap<K, V> {
+public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
     /** 
      * Number of times to try rehashing before deciding that the factory isn't
      * going to produce a working pair, giving up, and throwing an exception.
@@ -17,18 +16,36 @@ public class CuckooHashMap<K, V> {
      */
     public static int REHASH_TRIES = 2;
 
-    private final static class Entry<K, V> {
+    private final static class Entry<K, V> implements Map.Entry<K, V> {
         final K key;
         V value;
         Entry(K key, V value) { this.key = key; this.value = value; }
+
+        public K getKey() { return key; }
+        public V getValue() { return value; }
+        public V setValue(V value) { V old = this.value; this.value = value; return old; }
+        public boolean equals(Object o) {
+            if (!(o instanceof Map.Entry)) return false;
+            Map.Entry that = (Map.Entry) o;
+            Object thatKey = that.getKey();
+            if (key == thatKey || key != null && key.equals(thatKey)) {
+                Object thatValue = that.getValue();
+                if (value == thatValue || value != null && value.equals(thatValue)) return true;
+            }
+            return false;
+        }
+        public int hashCode() {
+            return (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
+        }
     }
 
     private final Hasher.Factory<K> hfact;
     private Hasher<K> h1, h2;
     private final double epsilon;
     private final int minCapacity;
-    private int r, n, minN, maxN, maxLoop;
+    private int r, n, maxN, maxLoop;
     private Entry<K, V>[] a;
+    private long modTime = 0;
 
     public CuckooHashMap(Hasher.Factory<K> hfact, int minCapacity, double epsilon) {
         this.hfact = hfact;
@@ -57,7 +74,8 @@ public class CuckooHashMap<K, V> {
 
     private void recalc() {
         maxN = (int) Math.floor(r / (1 + epsilon));
-        minN = maxN/2 < minCapacity ? 0 : (maxN+3)/4;
+        // Not doing shrink, see comment in remove.
+        // minN = maxN/2 < minCapacity ? 0 : (maxN+3)/4;
         maxLoop = Math.min(r, (int) Math.ceil(3*Math.log(r)/Math.log(1.0 + epsilon)));
     }
 
@@ -80,17 +98,25 @@ public class CuckooHashMap<K, V> {
         return -1;
     }
 
-    public V get(K key) {
-        int i = location(key);
+    public V get(Object key) {
+        @SuppressWarnings("unchecked")
+        int i = location((K) key);
         return i >= 0 ? a[i].value : null;
     }
 
-    public V remove(K key) {
-        int i = location(key);
+    public V remove(Object key) {
+        @SuppressWarnings("unchecked")
+        int i = location((K) key);
         if (i >= 0) {
+            modTime++;
             V value = a[i].value;
             a[i] = null;
-            if (--n < minN) { r = r/2; recalc(); if (!rehash()) reseed(null); }
+            n--;
+            // Can't support shrinking arrys in any clean way, since we need to
+            // be able to use iterator's remove, and if that would do rehashing
+            // it loses track of where it was. But if we were allowed this is
+            // how we would do it:
+            // if (n < minN) { r = r/2; recalc(); if (!rehash()) reseed(null); }
             return value;
         } else return null;
     }
@@ -128,6 +154,7 @@ public class CuckooHashMap<K, V> {
     }
 
     public V put(K key, V value) {
+        modTime++;
         int i = h1.hashCode(key) & r-1;
         Entry<K, V> e1 = a[i];
         if (e1 != null && key.equals(e1.key)) { V old = e1.value; e1.value = value; return old; }
@@ -160,15 +187,43 @@ public class CuckooHashMap<K, V> {
         return e;
     }
 
-    private static int ceilLg(int x) {
-        int y = 0;
-        while ((1 << y) < x) y++;
-        return y;
-    }
-
     // Package local accessors for tests.
-    int minN() { return minN; }
     int maxN() { return maxN; }
     int maxLoop() { return maxLoop; }
     int r() { return r; }
+
+    private final class EntryIterator implements Iterator<Map.Entry<K, V>> {
+        private long time = modTime;
+        private int i = -1, m = n;
+
+        public boolean hasNext() {
+            if (time != modTime) throw new ConcurrentModificationException();
+            return m > 0;
+        }
+        
+        public Entry<K, V> next() {
+            if (time != modTime) throw new ConcurrentModificationException();
+            if (m == 0) throw new NoSuchElementException();
+            m--;
+            while (true) {
+                Entry<K, V> e = a[++i];
+                if (e != null) return e;
+            }
+        }
+        public void remove() {
+            if (i < 0) throw new IllegalStateException();
+            if (time != modTime) throw new ConcurrentModificationException();
+            Entry<K, V> e = a[i];
+            if (e == null) throw new IllegalStateException();
+            CuckooHashMap.this.remove(e.key);
+            time = modTime;
+        }
+    }
+            
+    public Set<Map.Entry<K, V>> entrySet() {
+        return new AbstractSet<Map.Entry<K, V>>() {
+            public Iterator<Map.Entry<K, V>> iterator() { return new EntryIterator(); }
+            public int size() { return n; }
+        };
+    }
 }
