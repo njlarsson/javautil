@@ -2,6 +2,11 @@ package dk.itu.jesl.hash;
 
 import java.util.Random;
 
+/**
+ * Support for tabular hash functions. This class does not implement {@link
+ * Hasher}, but rather is used to create one. It contains methods to create
+ * {@link Hasher.Factory}s for some fixed key classes.
+ */
 public final class TabHasher {
     public interface ByteSequence {
 	byte byteAt(int i);
@@ -69,14 +74,19 @@ public final class TabHasher {
         return h;
     }
 
-    // public static <T> Hasher.Factory<T> hashCodeHasher(Class<T> klass) {
-    // 	return new Hasher.Factory<T> () {
-    // 	    public Hasher<T> makeHasher() {
-    // 		return new Hasher<T>() {
-    // 		    private TabHasher th = new TabHasher(4);
-    // 		    public int hashCode(T key) { return th.intHashCode(key.hashCode()); }
-    // 		};
-    // 	    }
-    // 	};
-    // }
+    public static Hasher.Factory<Long> longHasherFactory() {
+    	return new Hasher.Factory<Long> () {
+    	    public Hasher<Long> makeHasher() {
+    		return new Hasher<Long>() {
+    		    private TabHasher th = new TabHasher(8);
+    		    public int hashCode(Long key) { return th.longHashCode(key); }
+    		};
+    	    }
+    	};
+    }
+
+    // Here, I'd like to add, e.g., a corresponding method to produce a
+    // Hasher.Factory<CharSequence> for general CharSequence. What should it
+    // look like? I can't create a TabHasher for the key length, since the
+    // length of CharSequence cannot be bounded by any reasonable size.
 }

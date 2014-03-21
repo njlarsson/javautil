@@ -14,7 +14,7 @@ public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
      *
      * @see RehashFailedException
      */
-    public static int REHASH_TRIES = 2;
+    public static int REHASH_TRIES = 100;
 
     private final static class Entry<K, V> implements Map.Entry<K, V> {
         final K key;
