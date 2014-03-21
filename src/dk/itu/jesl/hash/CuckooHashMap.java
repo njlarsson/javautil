@@ -57,7 +57,7 @@ public class CuckooHashMap<K, V> {
 
     private void recalc() {
         maxN = (int) Math.floor(r / (1 + epsilon));
-        minN = maxN/2 < minCapacity ? 0 : maxN/4;
+        minN = maxN/2 < minCapacity ? 0 : (maxN+3)/4;
         maxLoop = Math.min(r, (int) Math.ceil(3*Math.log(r)/Math.log(1.0 + epsilon)));
     }
 

@@ -268,5 +268,11 @@ public class CuckooHashMapTest {
         m.put(keys[5], keys[5].name);
         assertThat(m.r(), is(8));
         assertThat(hfact.i, is(6));
+        for (int i = 0; i < 4; i++) {
+            m.remove(keys[i]);
+        }
+        assertThat(m.r(), is(8));
+        m.remove(keys[4]);
+        assertThat(m.r(), is(4));
     }
 }
