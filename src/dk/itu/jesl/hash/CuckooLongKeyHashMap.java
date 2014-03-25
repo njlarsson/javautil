@@ -4,8 +4,8 @@ import java.util.*;
 
 /**
  * Cuckoo hashing that uses long (64 bit integer) keys. Does not permit null
- * values. This class does not implement the {@link Map} interface; use {@link
- * CuckooLongidKeyHashMap} to tie in with standard Java collections.
+ * values. Since keys are not objects, this class does not implement the {@link
+ * Map} interface, but it provides generic map views that do.
  */
 public final class CuckooLongKeyHashMap<V> {
     private final LongHasher.Factory hfact;
@@ -284,5 +284,24 @@ public final class CuckooLongKeyHashMap<V> {
                 public int size() { return n; }
             };
         }
+    }
+
+    /**
+     * Gets a generic {@link Map} view of the hash map, given a one-to-one
+     * transformation between long and the generic key type.
+     */
+    public <K> Map<K, V> genericMap(LongidFunction<K> idf) {
+        return new GenericKeyView<K>(idf);
+    }
+
+    /**
+     * Gets a {@link Map} view of the hash map where the key type is the boxing
+     * type Long.
+     */
+    public Map<Long, V> genericMap() {
+        return new GenericKeyView<Long>(new LongidFunction<Long>() {
+                public Long fromLong(long l) { return l; }
+                public long toLong(Long l) { return l; }
+            });
     }
 }

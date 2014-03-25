@@ -1,9 +1,9 @@
 import java.util.Map;
 import dk.itu.jesl.hash.*;
 
-public class CuckooLongExample {
+public class CuckooLongExample2 {
     public static void main(String[] args) {
-        Map<Long, String> m = new CuckooHashMap<Long, String>(TabHasher.longGenericHasherFactory());
+        Map<Long, String> m = new CuckooLongKeyHashMap<String>(TabHasher.longKeyHasherFactory()).genericMap();
         m.put(5L, "five");
         m.put(10L, "ten");
         m.put(100000000000L, "a hundred billion");

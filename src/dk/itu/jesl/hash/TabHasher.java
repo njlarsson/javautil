@@ -74,12 +74,23 @@ public final class TabHasher {
         return h;
     }
 
-    public static Hasher.Factory<Long> longHasherFactory() {
+    public static Hasher.Factory<Long> longGenericHasherFactory() {
     	return new Hasher.Factory<Long> () {
     	    public Hasher<Long> makeHasher() {
     		return new Hasher<Long>() {
     		    private TabHasher th = new TabHasher(8);
     		    public int hashCode(Long key) { return th.longHashCode(key); }
+    		};
+    	    }
+    	};
+    }
+
+    public static LongHasher.Factory longKeyHasherFactory() {
+    	return new LongHasher.Factory () {
+    	    public LongHasher makeHasher() {
+    		return new LongHasher() {
+    		    private TabHasher th = new TabHasher(8);
+    		    public int hashCode(long key) { return th.longHashCode(key); }
     		};
     	    }
     	};
