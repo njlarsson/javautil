@@ -3,19 +3,11 @@ package dk.itu.jesl.hash;
 import java.util.*;
 
 /**
- * Cuckoo hashing implemented in a conventional way, using two arrays of
- * Map.Entry objects. Capable of handling any kind of objects as keys, provided
- * that an appropriate Hasher is provided.
+ * Cuckoo hashing implemented in a conventional way, using an array of Map.Entry
+ * objects. Capable of handling any kind of objects as keys, provided that an
+ * appropriate Hasher is provided.
  */
-public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
-    /** 
-     * Number of times to try rehashing before deciding that the factory isn't
-     * going to produce a working pair, giving up, and throwing an exception.
-     *
-     * @see RehashFailedException
-     */
-    public static int REHASH_TRIES = 100;
-
+public final class CuckooHashMap<K, V> extends AbstractMap<K, V> {
     private final static class Entry<K, V> implements Map.Entry<K, V> {
         final K key;
         V value;
@@ -44,7 +36,9 @@ public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
     private final double epsilon;
     private final int minCapacity;
     private int r, n, maxN, maxLoop;
-    private Entry<K, V>[] a;
+    private Entry<K, V>[] a;    // hash tables: [0, r), [r, 2r).
+
+    // Modfification time for iterators to detect concurrent modification.
     private long modTime = 0;
 
     public CuckooHashMap(Hasher.Factory<K> hfact, int minCapacity, double epsilon) {
@@ -140,7 +134,7 @@ public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
 
     // Rehashes with new hash functions, optionally adding one nestless entry.
     private void reseed(Entry<K, V> e) {
-        for (int k = 0; k < REHASH_TRIES; k++) {
+        for (int k = 0; k < RehashFailedException.REHASH_TRIES; k++) {
             h1 = hfact.makeHasher();
             h2 = hfact.makeHasher();
             if (rehash()) {
@@ -210,12 +204,13 @@ public class CuckooHashMap<K, V> extends AbstractMap<K, V> {
                 if (e != null) return e;
             }
         }
+
         public void remove() {
             if (i < 0) throw new IllegalStateException();
             if (time != modTime) throw new ConcurrentModificationException();
-            Entry<K, V> e = a[i];
-            if (e == null) throw new IllegalStateException();
-            CuckooHashMap.this.remove(e.key);
+            if (a[i] == null) throw new IllegalStateException();
+            a[i] = null;
+            n--;
             time = modTime;
         }
     }
