@@ -221,6 +221,7 @@ public final class CuckooLongKeyHashMap<V> {
         }
 
         final V setValue(int i, V value) {
+            if (value == null) throw new NullPointerException("null value not permitted");
             if (time != modTime) throw new ConcurrentModificationException();
             V old = av[i];
             if (old == null) throw new IllegalStateException();
@@ -237,6 +238,7 @@ public final class CuckooLongKeyHashMap<V> {
             if (time != modTime) throw new ConcurrentModificationException();
             if (av[i] == null) throw new IllegalStateException();
             av[i] = null;
+            --n;
             time = modTime;
         }
     }
