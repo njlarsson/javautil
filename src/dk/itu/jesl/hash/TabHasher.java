@@ -8,6 +8,10 @@ import java.util.Random;
  * {@link Hasher.Factory}s for some fixed key classes.
  */
 public final class TabHasher {
+    /**
+     * An interface for which (among other alternatives) a {@link TabHasher} can
+     * compute hash values.
+     */
     public interface ByteSequence {
 	byte byteAt(int i);
     }

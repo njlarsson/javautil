@@ -5,7 +5,8 @@ import java.util.*;
 /**
  * Cuckoo hashing that uses long (64 bit integer) keys. Does not permit null
  * values. Since keys are not objects, this class does not implement the {@link
- * Map} interface, but it provides generic map views that do.
+ * Map} interface, but it provides generic map views that do, via {@link
+ * #genericMap(LongidFunction idf)} and {@link #genericMap()}
  */
 public final class CuckooLongKeyHashMap<V> {
     private final LongHasher.Factory hfact;
@@ -173,6 +174,12 @@ public final class CuckooLongKeyHashMap<V> {
         return false;
     }
 
+    /**
+     * Cursor for iterating over the contents of a {@link
+     * CuckooLongKeyHashMap}. Differs from a normal iterator in that it has
+     * accessor methods for current key and value, rather than producing entry
+     * objects.
+     */
     public class Cursor {
         private int current = -1, remain = n;
         private long time = modTime;
@@ -243,6 +250,10 @@ public final class CuckooLongKeyHashMap<V> {
         }
     }
 
+    /**
+     * Gets a cursor (similar to an iterator) to loop across the elements in the
+     * hash table.
+     */
     public Cursor cursor() { return new Cursor(); }
 
     // Package local accessors for tests.
