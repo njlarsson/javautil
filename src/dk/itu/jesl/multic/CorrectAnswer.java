@@ -10,11 +10,39 @@ public class CorrectAnswer {
 
     private int pages = 0;
 
-    public static Question[][] parse(BufferedReader r, int multLetterBase) throws IOException {
-	return new CorrectAnswer(multLetterBase).parseNonstatic(r);
+    /** Parses a correct-answer file, returning an array of pages, where each
+      * page is an array of the questions on that page (corresponding to lines
+      * in the correct-answer file.
+      */
+    public static Question[][] parsePages(BufferedReader r, int multLetterBase) throws IOException {
+	return listlistToArrayarray(new CorrectAnswer(multLetterBase).parseNonstatic(r));
     }
 
-    private Question[][] parseNonstatic(BufferedReader r) throws IOException {
+    /** Parses a correct-answer file, returning an array of problems, where each
+      * problem is an array of the subproblems of that problem.
+      */
+    public static Question[][] parseProblems(BufferedReader r, int multLetterBase) throws IOException {
+	ArrayList<ArrayList<Question>> pages = new CorrectAnswer(multLetterBase).parseNonstatic(r);
+	ArrayList<ArrayList<Question>> problems = new ArrayList<ArrayList<Question>>();
+        int i = 0;
+        ArrayList<Question> p = null;
+        for (ArrayList<Question> page : pages) {
+            for (Question q : page) {
+                if (p == null) {
+                    p = new ArrayList<Question>();
+                } else if (q.mainProblem() != i) {
+                    problems.add(p);
+                    p = new ArrayList<Question>();
+                }
+                i = q.mainProblem();
+                p.add(q);
+            }
+        }
+        if (p != null) problems.add(p);
+        return listlistToArrayarray(problems);
+    }
+
+    private ArrayList<ArrayList<Question>> parseNonstatic(BufferedReader r) throws IOException {
 	ArrayList<ArrayList<Question>> pageList = new ArrayList<ArrayList<Question>>();
         Question pred = null;
 	while (true) {
@@ -30,18 +58,17 @@ public class CorrectAnswer {
 		}
 	    } catch (Err.FormatException fe) {
 		throw fe.setPage(pages);
-	    } catch (NumberFormatException nfe) {
-		throw new Err.FormatException(nfe).setPage(pages);
+	    } catch (RuntimeException rte) {
+		throw new Err.FormatException(rte).setPage(pages);
 	    }
 	}
-	Question[][] v = new Question[pageList.size()][];
+        return pageList;
+    }
+
+    private static Question[][] listlistToArrayarray(ArrayList<ArrayList<Question>> pageList) {
+        Question[][] v = new Question[pageList.size()][];
 	for (int i = 0; i < v.length; i++) {
 	    ArrayList<Question> p = pageList.get(i);
-            // System.out.print("page " + (i+1) + ":");
-            // for (Question q : p) {
-            //     System.out.print(" " + q.name());
-            // }
-            // System.out.println();
 	    v[i] = p.toArray(new Question[p.size()]);
 	}
 	return v;
@@ -95,13 +122,13 @@ public class CorrectAnswer {
 	    Matcher probEndM = probEnd.matcher(s);
 	    for (int i = 0; pos < end; i++) {
 		if (defaultMultiM.region(pos, end).lookingAt()) {
-		    int j = s.charAt(defaultMultiM.start(1)) - multLetterBase;
+		    int j = Character.toUpperCase(s.charAt(defaultMultiM.start(1))) - multLetterBase;
 		    Err.conf(j >= 1 && j <= K);
 		    v.add(Question.multi(pred, pages, problem, K, j, DEFAULT_MULTI_SCORE, multLetterBase));
 		    pos = defaultMultiM.end();
 		} else if (specMultiM.region(pos, end).lookingAt()) {
 		    double score = Double.parseDouble(specMultiM.group(1));
-		    char c = s.charAt(specMultiM.start(2));
+		    char c = Character.toUpperCase(s.charAt(specMultiM.start(2)));
 		    Err.conf(c > multLetterBase && c <= multLetterBase + K, c + " out of range");
 		    v.add(Question.multi(pred, pages, problem, K, c-multLetterBase, score, multLetterBase));
 		    pos = specMultiM.end();
@@ -120,8 +147,42 @@ public class CorrectAnswer {
 	    throw new Err.FormatException("Unexpected end of line. Missing semicolon?");
 	} catch (Err.FormatException fe) {
 	    throw fe.setProblem("" + problem);
-	} catch (NumberFormatException nfe) {
-	    throw new Err.FormatException(nfe).setProblem("" + problem);
+	} catch (RuntimeException rte) {
+	    throw new Err.FormatException(rte).setProblem("" + problem);
 	}
+    }
+
+    /** Parses and prints a correct answer file. */
+    public static void main(String[] args) throws IOException {
+        boolean files = false;
+        int multLetterBase = '0';
+        String arrayMeans = "page";
+        int i = 0;
+        while (i < args.length && args[i].charAt(0) == '-') {
+            if ("-A".equals(args[i])) {
+                multLetterBase = 'A'-1;
+            } else if ("-F".equals(args[i])) {
+                files = true;
+                arrayMeans = "question";
+            } else {
+                System.err.println("Unrecognized option: " + args[i]);
+                System.exit(64);        // EX_USAGE
+            }
+            i++;
+        }
+        BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(args[i]), "UTF-8"));
+        Question[][] corr;
+        if (files) {
+            corr = CorrectAnswer.parseProblems(r, multLetterBase);
+        } else {
+            corr = CorrectAnswer.parsePages(r, multLetterBase);
+        }            
+        for (int k = 0; k < corr.length; k++) {
+            System.out.print(arrayMeans + " " + k + ":");
+            for (int j = 0; j < corr[k].length; j++) {
+                System.out.print( " [" + corr[k][j].toString() + "]");
+            }
+            System.out.println();
+        }
     }
 }

@@ -26,6 +26,10 @@ public abstract class Question {
         return b.toString();
     }
 
+    public String toString() { return name(); }
+
+    public int mainProblem() { return problem; }
+
     public abstract double score(String answer);
 
     public abstract double rescaleFactor();
@@ -59,7 +63,7 @@ public abstract class Question {
 		    Err.conf(i == 0 && a == 1);
 		    return Double.NaN;
 		}
-		int j = answer.charAt(i) - multLetterBase;
+		int j = Character.toUpperCase(answer.charAt(i)) - multLetterBase;
 		Err.conf(j > max && j <= k, j + "");
 		c |= j == correct;
 		max = j;
