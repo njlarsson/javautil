@@ -2,7 +2,6 @@ import java.sql.*;
 import java.io.*;
 import java.util.*;
 
-
 // A simple JDBC client that works with MySQL. With some tiny changes,
 // this could work with any system that supports JDBC.
 //
@@ -68,6 +67,8 @@ public class MySQLClient {
         }
     }
     
+    /** Prompts for an sql snippet, executes it, and writes the result
+      * to console. */
     static boolean promptEval(Statement stmt, String prompt) throws SQLException, IOException {
         Console cons = System.console();
         String s = cons.readLine("%s", prompt);
