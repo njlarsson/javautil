@@ -1,0 +1,4 @@
+Working commands for these files are:
+
+java dk.itu.jesl.multic.Score -A -F -d corrdef-sgds-spring14 *txt
+java dk.itu.jesl.multic.Score -A -F corrdef-sgds-spring14 *txt
