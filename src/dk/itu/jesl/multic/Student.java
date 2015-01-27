@@ -139,15 +139,15 @@ public class Student {
                     int qnoSub = m.group(2).toLowerCase().charAt(0) - ('a' - 1);
                     
                     if (qnoMain < prevQMain) throw new Err.FormatException("Question out of sequence");
-                    if (qnoMain > prevQMain) {
-                        for (int i = prevQMain+1; i < qnoMain; i++) {
-                            missing.add("" + i);
+                    for (int i = prevQMain; i > 0 && i < qnoMain; i++) {
+                        for (int j = prevQSub+1; j <= corr[i-1].length; j++) {
+                            missing.add("" + i + (char) (('a' - 1) + j));
                         }
                         prevQSub = 0;
                     }
                     if (qnoSub < prevQSub) throw new Err.FormatException("Question out of sequence");
                     for (int i = prevQSub+1; i < qnoSub; i++) {
-                        missing.add("" + qnoMain + (('a' - 1) + i));
+                        missing.add("" + qnoMain + (char) (('a' - 1) + i));
                     }
                     registerScore(corr[qnoMain-1][qnoSub-1], m.group(3));
                     prevQMain = qnoMain;
@@ -158,13 +158,11 @@ public class Student {
                     throw new Err.FormatException(rte).setProblem(m.group(1) + m.group(2));
                 }
             }
-            if (prevQMain > 0) {
-                for (int i = prevQSub+1; i < corr[prevQMain-1].length; i++) {
-                    missing.add("" + prevQMain + (('a' - 1) + i));
+            for (int i = prevQMain; i > 0 && i <= corr.length; i++) {
+                for (int j = prevQSub+1; j <= corr[i-1].length; j++) {
+                    missing.add("" + i + (char) (('a' - 1) + j));
                 }
-            }
-            for (int i = prevQMain+1; i < corr.length; i++) {
-                missing.add("" + i);
+                prevQSub = 0;
             }
 	} catch (Err.FormatException fe) {
 	    throw fe.setSection(name);
