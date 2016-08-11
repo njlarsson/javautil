@@ -21,7 +21,8 @@ public class SerialServer {
     }
 
     /**
-     * Special exception for graceful HTTP response.
+     * Special exception that can be thrown by service for graceful
+     * HTTP response.
      */
     public static class HttpStatusException extends RuntimeException {
         private final String statusLine;

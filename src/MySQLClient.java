@@ -22,17 +22,25 @@ public class MySQLClient {
         }
     }
 
-    /** Runs the client. Arguments are host, user,  database, and
-      * password, in that order. If less than four arguments are
-      * given, the user is prompted for what is missing. */
+    /** Runs the client. Arguments are host, user, database, and password, in
+      * that order. If less than four arguments are given, or if any of the
+      * arguments is "-" the user is prompted for what is missing. If database
+      * is "+" it is taken to be the same as the user. */
     public static void main(String[] args) {
+        try {
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        } catch (ReflectiveOperationException ex) {
+            System.err.println("Can't load JDBC driver, " + ex);
+            System.exit(1);
+        }
+    
         Console cons = System.console();
 
-        String defaultHost = "195.178.235.60";
-
-        String host = args.length > 0 ? args[0] : prompt("Host", "195.178.235.60");
-        String user = args.length > 1 ? args[1] : prompt("User", null);
-        String database = args.length > 2 ? args[2] : prompt("Database", user);
+        String host = args.length <= 0 || "-".equals(args[0]) ? prompt("Host", null) : args[0];
+        String user = args.length <= 1 || "-".equals(args[1]) ? prompt("User", null) : args[1];
+        String database = args.length <= 2 || "-".equals(args[2]) ?
+            prompt("Database", user) :
+            "+".equals(args[2]) ? user : args[2];
         String password = args.length > 3 ? args[3] : new String(System.console().readPassword("Password: "));
         
         try {
