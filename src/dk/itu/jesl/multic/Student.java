@@ -26,13 +26,13 @@ public class Student {
     }
 
     public void reportScore(PrintWriter w) {
-	w.format("%s\t%f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
+	w.format("|%s\t|%.2f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
     }
 	 
     public void reportDetail(PrintWriter w) {
-	w.format("%s: %f", name, score);
+	w.format("|%s| %.2f", name, score);
 	if (wrong.size() > 0) {
-	    w.format(" wrong");
+	    w.format("| wrong");
 	    String delim = ": ";
 	    for (String q : wrong) {
 		w.format("%s%s", delim, q);
@@ -180,7 +180,7 @@ public class Student {
             // pending.add(q.name()); 
         } else {
             if (qs < 0) { wrong.add(q.name()); }
-            else if (qs < q.maxScore) { incomplete.add(q.name()); }
+            else if (qs < q.maxScore) { incomplete.add(q.name()+String.format(" [%.2f]", qs)); }
             score += qs * q.rescaleFactor();
         }
     }
