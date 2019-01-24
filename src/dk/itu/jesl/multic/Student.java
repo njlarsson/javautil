@@ -75,6 +75,8 @@ public class Student {
 	do {
 	    s = r.readLine();
 	    if (s == null) { return false; }
+            int comment = s.indexOf('#');
+            if (comment >= 0) { s = s.substring(0, comment); }
 	    s = s.trim();
 	} while (s.length() == 0);
 	name = s;
