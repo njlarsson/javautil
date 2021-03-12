@@ -30,9 +30,9 @@ public class Student {
     }
 	 
     public void reportDetail(PrintWriter w) {
-	w.format("|%s| %.2f", name, score);
+	w.format("|%s| %.2f |", name, score);
 	if (wrong.size() > 0) {
-	    w.format("| wrong");
+	    w.format(" wrong");
 	    String delim = ": ";
 	    for (String q : wrong) {
 		w.format("%s%s", delim, q);
@@ -75,15 +75,16 @@ public class Student {
 	do {
 	    s = r.readLine();
 	    if (s == null) { return false; }
-            int comment = s.indexOf('#');
-            if (comment >= 0) { s = s.substring(0, comment); }
 	    s = s.trim();
 	} while (s.length() == 0);
 	name = s;
 	try {
 	    for (int i = 0; i < corr.length; i++) {
 		try {
-		    parsePage(r.readLine(), corr[i]);
+                    s = r.readLine();
+                    int comment = s.indexOf('#');
+                    if (comment >= 0) { s = s.substring(0, comment); }
+		    parsePage(s.trim(), corr[i]);
 		} catch (Err.FormatException fe) {
 		    throw fe.setPage(i + 1);
 		} catch (NumberFormatException nfe) {
@@ -127,6 +128,8 @@ public class Student {
             int prevQSub = 0;
             String line;
             while ((line = r.readLine()) != null) {
+                int comment = line.indexOf('#');
+                if (comment >= 0) { line = line.substring(0, comment); }
                 line = line.trim();
                 if (line.length() == 0) continue; // blank line, skip
                 Matcher m = flineP.matcher(line);
