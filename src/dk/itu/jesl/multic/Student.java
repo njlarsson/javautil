@@ -11,6 +11,7 @@ public class Student {
     private ArrayList<String> incomplete = new ArrayList<String>();
     private ArrayList<String> pending = new ArrayList<String>();
     private ArrayList<String> missing = new ArrayList<String>();
+    private ArrayList<Double> scores = new ArrayList<Double>();
 
     public static Student parse(BufferedReader r, Question[][] corr) throws IOException {
 	Student stud = new Student();
@@ -27,6 +28,21 @@ public class Student {
 
     public void reportScore(PrintWriter w) {
 	w.format("|%s\t|%.2f%s\n", name, score, (pending.size() > 0 ? " (pending!)" : ""));
+    }
+	 
+    public void reportPoints(PrintWriter w) {
+	w.format("|%s\t|%.2f%s ", name, score, (pending.size() > 0 ? " (pending!)" : ""));
+        String delim = "= ";
+        for (double sc : scores) {
+            long dsc = (long) sc;
+            if (dsc == sc) {
+                w.format("%s%d ", delim, dsc);
+            } else {
+                w.format("%s%s ", delim, sc);
+            }
+            delim = "+ ";
+        }
+        w.format("\n");
     }
 	 
     public void reportDetail(PrintWriter w) {
@@ -186,7 +202,9 @@ public class Student {
         } else {
             if (qs < 0) { wrong.add(q.name()); }
             else if (qs < q.maxScore) { incomplete.add(q.name()+String.format(" [%.2f]", qs)); }
-            score += qs * q.rescaleFactor();
+            qs *= q.rescaleFactor();
+            score += qs;
+            scores.add(qs);
         }
     }
 }

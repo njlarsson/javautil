@@ -7,6 +7,7 @@ public class Score {
         "Arguments: [options] correct_answers_file given_answers_file\n" +
         "Options:\n" +
         "   -d:           Detailed information\n" +
+        "   -p:           Individual points (can't combine with -d)\n" +
         "   -A:           Choices are A, B, C (not 1, 2, 3)\n" +
         "   -F:           Read answers in student-submitted format from individual files\n" +
         "   -h or --help: Print this message and quit";
@@ -25,15 +26,17 @@ public class Score {
         }
     }
 
-    private static void report(Student stud, PrintWriter w, boolean detail) throws IOException {
-        if (detail) { stud.reportDetail(w); }
-        else { stud.reportScore(w); }
+    private static void report(Student stud, PrintWriter w, boolean detail, boolean points) throws IOException {
+        if      (detail) { stud.reportDetail(w); }
+        else if (points) { stud.reportPoints(w); }
+        else             { stud.reportScore(w); }
     }
 
     public static void main(String[] args) throws IOException {
         int i = 0;
         boolean detail = false;
         boolean files = false;
+        boolean points = false;
         int multLetterBase = '0';
         while (i < args.length && args[i].charAt(0) == '-') {
             if ("-d".equals(args[i])) {
@@ -45,6 +48,8 @@ public class Score {
                 multLetterBase = 'A'-1;
             } else if ("-F".equals(args[i])) {
                 files = true;
+            } else if ("-p".equals(args[i])) {
+                points = true;
             } else {
                 System.err.println("Unrecognized option: " + args[i]);
                 System.exit(64);        // EX_USAGE
@@ -63,7 +68,7 @@ public class Score {
                 Student stud = Student.parseF(studFile, corr, args[i]);
                 studFile.close();
                 i++;
-                report(stud, w, detail);
+                report(stud, w, detail, points);
             }
         } else {
             Question[][] corr = CorrectAnswer.parsePages(openFile(args, i++, "correct answer"), multLetterBase);
@@ -71,7 +76,7 @@ public class Score {
             while (true) {
                 Student stud = Student.parse(ansFile, corr);
                 if (stud == null) { break; }
-                report(stud, w, detail);
+                report(stud, w, detail, points);
             }
         }
         w.flush();
